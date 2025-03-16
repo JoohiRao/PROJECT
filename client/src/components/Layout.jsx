@@ -11,10 +11,7 @@ function Layout() {
     if (!user) {
       navigate("/");
     }
-    if (user.role === "admin") {
-      navigate("/admindashboard");
-      return;
-    }
+     
     
   }, [user, navigate]);
 
@@ -23,7 +20,7 @@ function Layout() {
   // 🟢 Define sidebar items based on role
   const menuItems = user.role === "admin"
     ? [
-        { name: "Dashboard", path: "/dashboard" },
+        { name: "Dashboard", path: "/admindashboard" },
         { name: "View Teams", path: "/view-teams" },
         { name: "Create Teams", path: "/create-teams" },
         { name: "View Members", path: "/view-members" },

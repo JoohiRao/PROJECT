@@ -11,8 +11,14 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(email, password);
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+  console.log("Stored User After Login:", storedUser);
     console.log("Stored User After Login:", localStorage.getItem("user")); // ✅ Debugging
-    navigate("/dashboard");
+    if (storedUser && storedUser.role === "admin") {
+      navigate("/admindashboard");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return (

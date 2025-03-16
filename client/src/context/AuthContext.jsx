@@ -23,29 +23,33 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-
+  
       console.log("Login API Response:", response.data);
-
-      if (response.data.token) {
+  
+      if (response.data.token && response.data.user) {
         const userData = {
           _id: response.data.user._id,
           name: response.data.user.name,
           email: response.data.user.email,
-          role: response.data.user.role,
+          role: response.data.user.role, // ✅ Ensure role is included
           tasksAssigned: response.data.user.tasksAssigned,
-          token: response.data.token, // ✅ Store token
+          token: response.data.token,
         };
-
+  
         localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
+  
+        return userData; // ✅ Return user data
       } else {
-        console.error("Login failed: No token received");
+        console.error("Login failed: No token or user data received");
+        return null;
       }
     } catch (error) {
       console.error("Login error:", error.response?.data?.message || error.message);
+      return null;
     }
   };
-
+  
   const logout = () => {
     localStorage.removeItem("user");
     setUser(null);

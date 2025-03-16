@@ -16,10 +16,9 @@ function Dashboard() {
 
     // Redirect admins to another page
     if (user.role === "admin") {
-      navigate("/admindashboard");
+      navigate("/admin-dashboard");
       return;
     }
-    
     const fetchTasks = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/user/tasks", {
