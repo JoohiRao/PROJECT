@@ -8,38 +8,42 @@ function Dashboard() {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState([]); // Ensure tasks is always an array
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
-    // Redirect admins to another page
     if (user.role === "admin") {
       navigate("/admin-dashboard");
       return;
     }
+
     const fetchTasks = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/user/tasks", {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        setTasks(response.data);
+
+        console.log("Fetched tasks:", response.data); // Debugging log
+
+        setTasks(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching tasks:", error);
+        setTasks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) fetchTasks();
+    fetchTasks();
   }, [location.state, user]);
 
   // Task statistics
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.status === "completed").length;
-  const inProgressTasks = tasks.filter(task => task.status === "inprogress").length;
-  const notActiveTasks = tasks.filter(task => task.status === "not active").length;
+  const completedTasks = tasks.filter(task => task.status.toLowerCase() === "completed").length;
+  const inProgressTasks = tasks.filter(task => task.status.toLowerCase() === "in progress").length;
+  const notStartedTasks = tasks.filter(task => task.status.toLowerCase() === "not started").length;
 
   // Task Priority Count
   const highPriority = tasks.filter(task => task.priority === "high").length;
@@ -50,7 +54,7 @@ function Dashboard() {
   const statusChartData = [
     { name: "Completed", value: completedTasks, color: "#4CAF50" },
     { name: "In Progress", value: inProgressTasks, color: "#FFC107" },
-    { name: "Not Active", value: notActiveTasks, color: "#F44336" },
+    { name: "Not Started", value: notStartedTasks, color: "#F44336" },
   ];
 
   // Task Priority Chart Data
@@ -76,7 +80,7 @@ function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
       {/* Welcome Message */}
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Welcome, {user.name}</h1>
+      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Welcome, {user?.name}</h1>
 
       {/* Task Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,24 +101,24 @@ function Dashboard() {
             </div>
             <div className="p-4 bg-red-100 rounded-lg text-center">
               <h3 className="text-lg font-semibold text-gray-700">Not Active</h3>
-              <p className="text-2xl font-bold">{notActiveTasks}</p>
+              <p className="text-2xl font-bold">{notStartedTasks}</p>
             </div>
           </div>
         </div>
 
         {/* Task Status Graph */}
         <div className="p-4 bg-gray-100 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Task Status</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={statusChartData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <h2 className="text-xl font-semibold mb-4">Task Status</h2>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={statusChartData}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="value" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
       </div>
 
       {/* Task Priority Graph */}
@@ -130,7 +134,6 @@ function Dashboard() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-
       {/* Task List (Max 4 tasks) */}
       <h2 className="text-2xl font-semibold mt-8 mb-4">Your Tasks</h2>
       {loading ? (
