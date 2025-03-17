@@ -1,117 +1,60 @@
-import { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useContext } from "react";
 import axios from "axios";
 import AuthContext from "../context/AuthContext";
 
-function EditTask() {
+function EditTask({ task, onClose, onUpdate }) {
   const { user } = useContext(AuthContext);
-  const { taskId } = useParams();
-  const navigate = useNavigate();
-
-  const [task, setTask] = useState({
-    title: "",
-    description: "",
-    priority: "low",
-    deadline: "",
+  const [editForm, setEditForm] = useState({
+    title: task.title,
+    description: task.description,
   });
 
-  const [loading, setLoading] = useState(true);
+  const handleChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
 
-  // Fetch Task Details
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/user/task/${taskId}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        setTask(response.data);
-      } catch (error) {
-        console.error("Error fetching task:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTask();
-  }, [taskId, user.token]);
-
-  // Handle Form Submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const saveEdit = async () => {
     try {
       await axios.patch(
-        `http://localhost:5000/api/user/task/${taskId}/update`,
-        task,
+        `http://localhost:5000/api/user/task/${task._id}/update`,
+        { title: editForm.title, description: editForm.description },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
-      alert("Task updated successfully!");
-      navigate("/view-task"); // Redirect to task list
+      onUpdate(task._id, editForm); // Update the task in parent component
+      onClose(); // Close the edit form
     } catch (error) {
       console.error("Error updating task:", error);
-      alert("Failed to update task");
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-2xl font-bold text-center mb-6 text-blue-600">Edit Task</h1>
-
-      {loading ? (
-        <p className="text-center text-gray-600">Loading task details...</p>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block font-medium">Title</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded"
-              value={task.title}
-              onChange={(e) => setTask({ ...task, title: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium">Description</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              value={task.description}
-              onChange={(e) => setTask({ ...task, description: e.target.value })}
-              required
-            ></textarea>
-          </div>
-
-          <div>
-            <label className="block font-medium">Priority</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={task.priority}
-              onChange={(e) => setTask({ ...task, priority: e.target.value })}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-medium">Deadline</label>
-            <input
-              type="date"
-              className="w-full p-2 border rounded"
-              value={task.deadline.split("T")[0]}
-              onChange={(e) => setTask({ ...task, deadline: e.target.value })}
-              required
-            />
-          </div>
-
-          <button type="submit" className="w-full p-3 bg-green-500 text-white rounded">
-            Save Changes
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 className="text-xl font-bold text-center mb-4">Edit Task</h2>
+        <input
+          className="w-full p-2 border rounded mt-1"
+          name="title"
+          value={editForm.title}
+          onChange={handleChange}
+          placeholder="Title"
+        />
+        <textarea
+          className="w-full p-2 border rounded mt-2"
+          name="description"
+          value={editForm.description}
+          onChange={handleChange}
+          placeholder="Description"
+        />
+        <div className="mt-4 flex justify-between">
+          <button className="bg-green-500 text-white px-3 py-1 rounded" onClick={saveEdit}>
+            Save
           </button>
-        </form>
-      )}
+          <button className="bg-gray-500 text-white px-3 py-1 rounded" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

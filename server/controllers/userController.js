@@ -19,13 +19,24 @@ exports.createTask = async (req, res) => {
   try {
     const { title, description, priority, deadline } = req.body;
 
+    // Convert priority to proper case (first letter uppercase)
+    const formattedPriority = priority 
+      ? priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase() 
+      : "Medium";
+
+    // Validate priority
+    const validPriorities = ["Low", "Medium", "High"];
+    if (!validPriorities.includes(formattedPriority)) {
+      return res.status(400).json({ message: "Invalid priority" });
+    }
+
     const newTask = new Task({
       title,
       description,
-      priority: priority || "medium",
+      priority: formattedPriority,
       status: "not started",
-      assignedTo: req.user.id, // User assigns task to themselves
-      createdBy: req.user.id, // User who created it
+      assignedTo: req.user.id, 
+      createdBy: req.user.id, 
       deadline
     });
 
@@ -89,20 +100,30 @@ exports.updateTaskStatus = async (req, res) => {
 
     console.log("🔹 Task Update Request Received:", { taskId, status });
 
-    if (!["not started", "in progress", "completed"].includes(status)) {
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    const validStatuses = ["not started", "in progress", "completed"];
+    if (!validStatuses.includes(status.toLowerCase())) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const task = await Task.findByIdAndUpdate(taskId, { status }, { new: true });
-
+    // ✅ Ensure task update happens successfully
+    const task = await Task.findById(taskId);
     if (!task) {
       console.log("❌ Task Not Found");
       return res.status(404).json({ message: "Task not found" });
     }
 
-    console.log("✅ Task Updated Successfully:", task);
+    console.log("🔄 Old Task Status:", task.status);
 
-    // Fetch the updated graph data
+    task.status = status.toLowerCase();
+    await task.save(); // ✅ Ensure the update is properly saved
+
+    console.log("✅ New Task Status Saved:", task.status);
+
+    // ✅ Fetch updated graph data
     const updatedGraph = await getTaskStatusData(task.createdBy);
 
     console.log("📊 Updated Graph Data:", updatedGraph);
@@ -117,6 +138,8 @@ exports.updateTaskStatus = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 
 // ✅ Fetch Task Status Graph
@@ -139,33 +162,33 @@ const getTaskStatusData = async (userId) => {
       {
         $match: {
           $or: [
-            { assignedTo: new mongoose.Types.ObjectId(userId) }, 
-            { createdBy: new mongoose.Types.ObjectId(userId) }
-          ]
-        }
+            { assignedTo: new mongoose.Types.ObjectId(userId) },
+            { createdBy: new mongoose.Types.ObjectId(userId) },
+          ],
+        },
       },
       {
         $group: {
-          _id: { $toLower: "$status" },  // Convert status to lowercase for consistency
-          count: { $sum: 1 }
-        }
-      }
-    ]);
+          _id: { $toLower: "$status" }, // Convert status to lowercase for consistency
+          count: { $sum: 1 },
+        },
+      },
+    ]).exec(); // ✅ Force fresh query execution
 
-    console.log("📊 Aggregated Status Counts:", statusCounts);
+    console.log("📊 Aggregated Status Counts from DB:", statusCounts);
 
     // Default structure for status counts
     const result = { "not started": 0, "in progress": 0, "completed": 0 };
 
     // Populate result with database values
     statusCounts.forEach(({ _id, count }) => {
+      console.log(`🔢 Status: ${_id}, Count: ${count}`);
       if (result.hasOwnProperty(_id)) {
         result[_id] = count;
-        count++;
       }
     });
 
-    console.log("📊 Updated Task Status Graph:", result);
+    console.log("📊 Final Computed Task Status Graph:", result);
 
     return result;
   } catch (error) {
@@ -177,18 +200,19 @@ const getTaskStatusData = async (userId) => {
 
 
 
+
 // ✅ 6. Set Task Priority
 exports.setTaskPriority = async (req, res) => {
   try {
     const { taskId } = req.params;
     const { priority } = req.body;
 
-    if (!["low", "medium", "high"].includes(priority)) {
+    if (!["Low", "Medium", "High"].includes(priority)) {
       return res.status(400).json({ message: "Invalid priority" });
     }
 
     const task = await Task.findByIdAndUpdate(taskId, { priority }, { new: true });
-
+      console.log(priority)
     if (!task) return res.status(404).json({ message: "Task not found" });
 
     res.json({ message: "Task priority updated", task });
@@ -226,12 +250,13 @@ exports.getTaskPriorityGraph = async (req, res) => {
       console.log("📊 Aggregated Priority Counts:", priorityCounts);
 
       // Default priority structure
-      const result = { low: 0, medium: 0, high: 0 };
+       const result = { Low: 0, Medium: 0, High: 0 };
       
       // Map database results to the response object
       priorityCounts.forEach(({ _id, count }) => {
-          if (result.hasOwnProperty(_id)) {
-              result[_id] = count;
+        const formattedKey = _id.charAt(0).toUpperCase() + _id.slice(1); 
+          if (result.hasOwnProperty(formattedKey)) {
+              result[formattedKey] = count;
           }
       });
 

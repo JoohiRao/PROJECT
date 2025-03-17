@@ -1,15 +1,30 @@
 import { useEffect, useState, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import AuthContext from "../context/AuthContext";
 
 function Dashboard() {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]); // Ensure tasks is always an array
+  const [tasks, setTasks] = useState([]);
+  const [priorityChartData, setPriorityChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [taskStats, setTaskStats] = useState({
+    total: 0,
+    completed: 0,
+    inProgress: 0,
+    notStarted: 0,
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -21,16 +36,38 @@ function Dashboard() {
 
     const fetchTasks = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/user/tasks", {
-          headers: { Authorization: `Bearer ${user.token}` },
+        const response = await axios.get(
+          "http://localhost:5000/api/user/tasks",
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+
+        console.log("Fetched tasks:", response.data);
+        const fetchedTasks = Array.isArray(response.data) ? response.data : [];
+        setTasks(fetchedTasks);
+
+        // Calculate task statistics
+        const completed = fetchedTasks.filter(
+          (task) => task.status.toLowerCase() === "completed"
+        ).length;
+        const inProgress = fetchedTasks.filter(
+          (task) => task.status.toLowerCase() === "in progress"
+        ).length;
+        const notStarted = fetchedTasks.filter(
+          (task) => task.status.toLowerCase() === "not started"
+        ).length;
+
+        setTaskStats({
+          total: fetchedTasks.length,
+          completed,
+          inProgress,
+          notStarted,
         });
-
-        console.log("Fetched tasks:", response.data); // Debugging log
-
-        setTasks(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching tasks:", error);
         setTasks([]);
+        setTaskStats({ total: 0, completed: 0, inProgress: 0, notStarted: 0 });
       } finally {
         setLoading(false);
       }
@@ -39,33 +76,36 @@ function Dashboard() {
     fetchTasks();
   }, [location.state, user]);
 
-  // Task statistics
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.status.toLowerCase() === "completed").length;
-  const inProgressTasks = tasks.filter(task => task.status.toLowerCase() === "in progress").length;
-  const notStartedTasks = tasks.filter(task => task.status.toLowerCase() === "not started").length;
+  useEffect(() => {
+    if (!user) return;
 
-  // Task Priority Count
-  const highPriority = tasks.filter(task => task.priority === "high").length;
-  const mediumPriority = tasks.filter(task => task.priority === "medium").length;
-  const lowPriority = tasks.filter(task => task.priority === "low").length;
+    const fetchPriorityGraph = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/user/graph/task-priority",
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
 
-  // Task Status Chart Data
-  const statusChartData = [
-    { name: "Completed", value: completedTasks, color: "#4CAF50" },
-    { name: "In Progress", value: inProgressTasks, color: "#FFC107" },
-    { name: "Not Started", value: notStartedTasks, color: "#F44336" },
-  ];
+        console.log("Fetched Priority Graph:", response.data);
 
-  // Task Priority Chart Data
-  const priorityChartData = [
-    { name: "High Priority", value: highPriority, color: "#F44336" },
-    { name: "Medium Priority", value: mediumPriority, color: "#FFC107" },
-    { name: "Low Priority", value: lowPriority, color: "#4CAF50" },
-  ];
+        setPriorityChartData([
+          { name: "High Priority", value: response.data.High, color: "#F44336" },
+          { name: "Medium Priority", value: response.data.Medium, color: "#FFC107" },
+          { name: "Low Priority", value: response.data.Low, color: "#4CAF50" },
+        ]);
+      } catch (error) {
+        console.error("Error fetching priority graph:", error);
+      }
+    };
 
+    fetchPriorityGraph();
+  }, [user]);
+
+  // Get priority color for task labels
   const getPriorityColor = (priority) => {
-    switch (priority) {
+    switch (priority.toLowerCase()) {
       case "high":
         return "bg-red-500 text-white";
       case "medium":
@@ -80,7 +120,9 @@ function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
       {/* Welcome Message */}
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Welcome, {user?.name}</h1>
+      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">
+        Welcome, {user?.name}
+      </h1>
 
       {/* Task Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -89,36 +131,42 @@ function Dashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-blue-100 rounded-lg text-center">
               <h3 className="text-lg font-semibold text-gray-700">Total Tasks</h3>
-              <p className="text-2xl font-bold">{totalTasks}</p>
+              <p className="text-2xl font-bold">{taskStats.total}</p>
             </div>
             <div className="p-4 bg-green-100 rounded-lg text-center">
               <h3 className="text-lg font-semibold text-gray-700">Completed</h3>
-              <p className="text-2xl font-bold">{completedTasks}</p>
+              <p className="text-2xl font-bold">{taskStats.completed}</p>
             </div>
             <div className="p-4 bg-yellow-100 rounded-lg text-center">
               <h3 className="text-lg font-semibold text-gray-700">In Progress</h3>
-              <p className="text-2xl font-bold">{inProgressTasks}</p>
+              <p className="text-2xl font-bold">{taskStats.inProgress}</p>
             </div>
             <div className="p-4 bg-red-100 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700">Not Active</h3>
-              <p className="text-2xl font-bold">{notStartedTasks}</p>
+              <h3 className="text-lg font-semibold text-gray-700">Not Started</h3>
+              <p className="text-2xl font-bold">{taskStats.notStarted}</p>
             </div>
           </div>
         </div>
 
         {/* Task Status Graph */}
         <div className="p-4 bg-gray-100 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Task Status</h2>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={statusChartData}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="value" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+          <h2 className="text-xl font-semibold mb-4">Task Status</h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={[
+                { name: "Completed", value: taskStats.completed, color: "#4CAF50" },
+                { name: "In Progress", value: taskStats.inProgress, color: "#FFC107" },
+                { name: "Not Started", value: taskStats.notStarted, color: "#F44336" },
+              ]}
+            >
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Task Priority Graph */}
@@ -134,6 +182,7 @@ function Dashboard() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
       {/* Task List (Max 4 tasks) */}
       <h2 className="text-2xl font-semibold mt-8 mb-4">Your Tasks</h2>
       {loading ? (
@@ -168,6 +217,9 @@ function Dashboard() {
           </button>
         </div>
       )}
+
+
+
     </div>
   );
 }

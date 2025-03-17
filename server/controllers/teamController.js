@@ -1,6 +1,7 @@
 const Team = require("../models/Team");
 const User = require("../models/User");
-
+// const Team = require("../models/Team"); // Ensure this is correct
+const TrashTeam = require("../models/TrashTeam");
 // Create a new team
 exports.createTeam = async (req, res) => {
     try {
@@ -67,15 +68,32 @@ exports.getAllTeams = async (req, res) => {
       res.status(500).json({ message: error.message });
     }
   };
-
   exports.deleteTeam = async (req, res) => {
     try {
-      await Team.findByIdAndDelete(req.params.teamId);
-      res.json({ message: "Team deleted successfully" });
+      console.log("Received teamId:", req.params.teamId); // Debugging
+  
+      const team = await Team.findById(req.params.teamId);
+  
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+  
+      // Move the team to TrashTeam
+      const trashedTeam = new TrashTeam({
+        name: team.name,
+        description: team.description,
+        priority: team.priority,
+        createdBy: team.createdBy,
+        deletedAt: new Date(),
+      });
+  
+      await trashedTeam.save(); // Save to TrashTeam collection
+  
+      await Team.findByIdAndDelete(req.params.teamId); // Delete from Team collection
+  
+      res.status(200).json({ message: "Team moved to trash successfully" });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error deleting team:", error);
+      res.status(500).json({ message: "Server error" });
     }
   };
-
-
-  // for adding user to a team in json send userid 

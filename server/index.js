@@ -25,3 +25,4 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/user",userRoutes);
 
 app.listen(5000)
+

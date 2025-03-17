@@ -24,18 +24,12 @@ exports.getTaskAssignmentGraph = async (req, res) => {
 // 📌 Get Task Progress Overview
 exports.getTaskProgressGraph = async (req, res) => {
   try {
-    const progressData = await Task.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
+    const taskData = await Task.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
-    res.json(progressData);
+    res.json(taskData);
   } catch (error) {
-    console.error("Error fetching task progress data:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error.message });
   }
 };
