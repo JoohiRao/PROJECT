@@ -13,7 +13,7 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 function Calendars() {
   const { user } = useContext(AuthContext);
   const [events, setEvents] = useState([]);
-  const [view, setView] = useState(Views.MONTH); // Default view: Month
+  const [view, setView] = useState(Views.MONTH);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -22,7 +22,7 @@ function Calendars() {
           headers: { Authorization: `Bearer ${user.token}` },
         });
 
-        // Convert tasks into calendar events
+        // Convert tasks to calendar events
         const formattedEvents = response.data.map((task) => ({
           id: task._id,
           title: task.title,
@@ -40,23 +40,23 @@ function Calendars() {
     if (user) fetchTasks();
   }, [user]);
 
-  // Function to get event styling based on priority
+  // Styling based on priority
   const getEventStyle = (event) => {
-    let backgroundColor = "green"; // Default for Low Priority
+    let backgroundColor = "green"; // Low Priority
     if (event.priority === "High") backgroundColor = "red";
     else if (event.priority === "Medium") backgroundColor = "orange";
 
     return {
       style: {
         backgroundColor,
-        color: "white",
+        color: "gray",
         borderRadius: "5px",
         padding: "5px",
       },
     };
   };
 
-  // Function to check for reminders
+  // Reminder notifications
   useEffect(() => {
     const checkReminders = () => {
       const now = new Date();
@@ -64,50 +64,64 @@ function Calendars() {
         const eventTime = new Date(event.start);
         const timeDiff = eventTime - now;
 
-        if (timeDiff > 0 && timeDiff < 3600000) { // Notify 1 hour before deadline
+        if (timeDiff > 0 && timeDiff < 3600000) {
           new Notification("Task Reminder", { body: `Your task "${event.title}" is due soon!` });
         }
       });
     };
 
     if (Notification.permission === "granted") {
-      const interval = setInterval(checkReminders, 60000); // Check every minute
+      const interval = setInterval(checkReminders, 60000);
       return () => clearInterval(interval);
     } else if (Notification.permission !== "denied") {
       Notification.requestPermission();
     }
   }, [events]);
 
+  // Style for the calendar cells and texts
+  const calendarStyle = {
+    style: {
+      backgroundColor: "#1a1a1a",
+      color: "gray",
+      borderColor: "gray",
+    },
+  };
+
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Task Calendar</h1>
+    <div className="flex items-center justify-center min-h-screen bg-black text-gray-400">
+      <div className="w-full max-w-6xl p-6 bg-[#1a1a1a] shadow-lg rounded-lg">
+        <h1 className="text-3xl font-bold text-center mb-6 text-blue-400">Task Calendar</h1>
 
-      {/* Dropdown for selecting calendar view */}
-      <div className="flex justify-center mb-4">
-        <label className="mr-2 font-semibold">View:</label>
-        <select
-          value={view}
-          onChange={(e) => setView(e.target.value)}
-          className="p-2 border rounded-md"
-        >
-          <option value={Views.MONTH}>Month</option>
-          <option value={Views.WEEK}>Week</option>
-          <option value={Views.DAY}>Day</option>
-        </select>
+        {/* Calendar View Selector */}
+        <div className="flex justify-center mb-4">
+          <label className="mr-2 font-semibold text-gray-500">View:</label>
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value)}
+            className="p-2 bg-[#333333] border border-gray-500 text-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={Views.MONTH}>Month</option>
+            <option value={Views.WEEK}>Week</option>
+            <option value={Views.DAY}>Day</option>
+          </select>
+        </div>
+
+        {/* Calendar Component */}
+        <div className="bg-[#1a1a1a] p-4 rounded-lg shadow-lg">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 500, backgroundColor: "#1a1a1a", color: "gray" }}
+            eventPropGetter={getEventStyle}
+            views={{ month: true, week: true, day: true }}
+            view={view}
+            onView={setView}
+            dayPropGetter={() => calendarStyle} // Styling day cells
+          />
+        </div>
       </div>
-
-      {/* Calendar Component */}
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: 500 }}
-        eventPropGetter={getEventStyle}
-        views={{ month: true, week: true, day: true }} // Allowed views
-        view={view} // Controlled view
-        onView={setView} // Updates view on change
-      />
     </div>
   );
 }

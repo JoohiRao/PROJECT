@@ -1,84 +1,87 @@
-const express=require("express")
-const Team = require("../models/Team"); // Ensure this is correct
+const express = require("express");
+const Team = require("../models/Team");
 const TrashTeam = require("../models/TrashTeam");
 
 const {
-    createTeam,
-    addMemberToTeam,
-    removeMemberFromTeam,
-    getAllTeams,
-    deleteTeam,
-  } = require("../controllers/teamController");
-  const { protect, adminOnly } = require("../middleware/authMiddleware");
+  getTeamOverview,
+  getMemberInsights,
+  getRecentActivity,
+  getTaskOverview,
+  getTeamProgress,
+  getAllMembers,
+  assignToTeam,
+  removeFromTeam,
+  updateRole,
+  getMemberDetails,
+  getAllTeams,
+  getTeamDetails,
+  updateTeam,
+  deleteTeam,
+  addMember,
+  removeMember,
+  getTrashedTeams,
+  trashTeam,
+  restoreTeam,
+  permanentlyDeleteTeam,
 
+} = require("../controllers/teamController");
 
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-  const router = express.Router();
+const router = express.Router();
 
-router.post("/", protect, adminOnly, createTeam); // Create team
-router.get("/", protect, adminOnly, getAllTeams); // Get all teams
-router.post("/:teamId/add-member", protect, adminOnly, addMemberToTeam); // Add member to team
-router.put("/:teamId/remove-member", protect, adminOnly, removeMemberFromTeam); // Remove member from team
-router.delete("/:teamId", protect,  deleteTeam); // Delete team
+// Team Overview
+router.get("/", getAllTeams);
 
-router.get("/trash", protect, adminOnly, async (req, res) => {
-  try {
-    const trashedTeams = await TrashTeam.find({ isDeleted: true });
-    res.json(trashedTeams);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+// Member Insights
+router.get("/member-insights", getMemberInsights);
 
+// Recent Activity
+router.get("/recent-activity", getRecentActivity);
 
-// Soft delete a team instead of permanently deleting it
-router.delete("/:teamId/delete", protect, async (req, res) => {
-  try {
-    const { teamId } = req.params;
+// View All Members
+router.get("/all-members", getAllMembers);
 
-    const deletedTeam = await Team.findByIdAndUpdate(
-      teamId,
-      { isDeleted: true }, // Mark as deleted instead of removing it
-      { new: true }
-    );
+// Task Overview
+router.get("/tasks-overview", getTaskOverview);
 
-    if (!deletedTeam) {
-      return res.status(404).json({ message: "Team not found" });
-    }
+// Team Progress
+router.get("/team-progress/:teamId", getTeamProgress);
 
-    res.status(200).json({ message: "Team moved to trash", deletedTeam });
-  } catch (error) {
-    console.error("Error deleting team:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
+// Assign/Reassign Teams
+router.post("/assign-team", assignToTeam);
 
+// Remove from Team
+router.post("/remove-team", removeFromTeam);
 
-// 🔄 Restore a team from Trash
-router.put("/:teamId/restore", protect, async (req, res) => {
-  try {
-    const { teamId } = req.params;
-    console.log("🔍 Searching for team ID:", teamId); // Debugging
+// Update Role (Admin/User)
+router.post("/update-role", updateRole);
 
-    const existingTeam = await Team.findById(teamId);
-    console.log("✅ Found team:", existingTeam); // Debugging
+// Detailed Member View
+router.get("/member-details/:memberId", getMemberDetails);
 
-    if (!existingTeam) {
-      return res.status(404).json({ message: "Team not found" });
-    }
+// New Routes for View Teams Feature
+// Get all teams with search and filter
+router.get("/view-teams", getAllTeams);
 
-    if (!existingTeam.isDeleted) {
-      return res.status(400).json({ message: "Team is already active" });
-    }
+// Get team details (members, tasks)
+router.get("/details/:teamId", getTeamDetails);
 
-    existingTeam.isDeleted = false;
-    await existingTeam.save();
+// Edit team details (name, description)
+router.put("/edit/:teamId", updateTeam);
 
-    res.status(200).json({ message: "Team restored successfully", restoredTeam: existingTeam });
-  } catch (error) {
-    console.error("Error restoring team:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
+// Delete team (move to trash)
+router.delete("/delete/:teamId", deleteTeam);
+
+// Add member to a team
+router.post("/:teamId/add-member", addMember);
+
+// Remove member from a team
+router.post("/:teamId/remove-member", removeMember);
+
+router.get("/trashed-teams", getTrashedTeams);
+router.put("/trash/:teamId", trashTeam);
+router.put("/restore/:teamId", restoreTeam);
+router.delete("/delete-permanently/:teamId", permanentlyDeleteTeam);
 
 module.exports = router;

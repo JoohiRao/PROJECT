@@ -8,6 +8,7 @@ const taskSchema = new mongoose.Schema({
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Who is assigned the task
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Who created the task
   deadline: { type: Date },
+  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
 }, { timestamps: true });
 
 module.exports = mongoose.models.Task || mongoose.model("Task", taskSchema);

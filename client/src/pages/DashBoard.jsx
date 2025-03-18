@@ -7,9 +7,22 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
+import {
+  FaTasks,
+  FaCheckCircle,
+  FaSpinner,
+  FaTimesCircle,
+  FaChartPie,
+  FaCheck,
+  FaExclamationTriangle,
+  FaExclamationCircle,
+} from "react-icons/fa";
+import { FiBarChart2 } from "react-icons/fi";
 import AuthContext from "../context/AuthContext";
 
 function Dashboard() {
@@ -28,7 +41,6 @@ function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-
     if (user.role === "admin") {
       navigate("/admin-dashboard");
       return;
@@ -36,64 +48,42 @@ function Dashboard() {
 
     const fetchTasks = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/user/tasks",
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
+        const response = await axios.get("http://localhost:5000/api/user/tasks", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
 
-        console.log("Fetched tasks:", response.data);
         const fetchedTasks = Array.isArray(response.data) ? response.data : [];
         setTasks(fetchedTasks);
 
-        // Calculate task statistics
-        const completed = fetchedTasks.filter(
-          (task) => task.status.toLowerCase() === "completed"
-        ).length;
-        const inProgress = fetchedTasks.filter(
-          (task) => task.status.toLowerCase() === "in progress"
-        ).length;
-        const notStarted = fetchedTasks.filter(
-          (task) => task.status.toLowerCase() === "not started"
-        ).length;
-
         setTaskStats({
           total: fetchedTasks.length,
-          completed,
-          inProgress,
-          notStarted,
+          completed: fetchedTasks.filter((t) => t.status.toLowerCase() === "completed").length,
+          inProgress: fetchedTasks.filter((t) => t.status.toLowerCase() === "in progress").length,
+          notStarted: fetchedTasks.filter((t) => t.status.toLowerCase() === "not started").length,
         });
       } catch (error) {
         console.error("Error fetching tasks:", error);
-        setTasks([]);
-        setTaskStats({ total: 0, completed: 0, inProgress: 0, notStarted: 0 });
       } finally {
         setLoading(false);
       }
     };
 
     fetchTasks();
-  }, [location.state, user]);
+  }, [location, user]);
 
   useEffect(() => {
     if (!user) return;
 
     const fetchPriorityGraph = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/user/graph/task-priority",
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
-
-        console.log("Fetched Priority Graph:", response.data);
+        const response = await axios.get("http://localhost:5000/api/user/graph/task-priority", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
 
         setPriorityChartData([
-          { name: "High Priority", value: response.data.High, color: "#F44336" },
-          { name: "Medium Priority", value: response.data.Medium, color: "#FFC107" },
-          { name: "Low Priority", value: response.data.Low, color: "#4CAF50" },
+          { name: "High", value: response.data.High, color: "#FF4D4F" },
+          { name: "Medium", value: response.data.Medium, color: "#FFCC00" },
+          { name: "Low", value: response.data.Low, color: "#4CAF50" },
         ]);
       } catch (error) {
         console.error("Error fetching priority graph:", error);
@@ -103,124 +93,172 @@ function Dashboard() {
     fetchPriorityGraph();
   }, [user]);
 
-  // Get priority color for task labels
-  const getPriorityColor = (priority) => {
+  const getPriorityStyles = (priority) => {
     switch (priority.toLowerCase()) {
       case "high":
-        return "bg-red-500 text-white";
+        return { color: "#FF4D4F", label: "High", icon: <FaExclamationCircle /> };
       case "medium":
-        return "bg-yellow-400 text-black";
+        return { color: "#FFCC00", label: "Medium", icon: <FaExclamationTriangle /> };
       case "low":
-        return "bg-green-500 text-white";
+        return { color: "#4CAF50", label: "Low", icon: <FaCheck /> };
       default:
-        return "bg-gray-300 text-black";
+        return { color: "#808080", label: "Unknown", icon: <FaTasks /> };
+    }
+  };
+
+  const getStatusStyles = (status) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return { color: "#4CAF50", label: "COMPLETED" };
+      case "in progress":
+        return { color: "#FFCC00", label: "IN PROGRESS" };
+      case "not started":
+        return { color: "#FF4D4F", label: "NOT STARTED" };
+      default:
+        return { color: "#808080", label: "UNKNOWN" };
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      {/* Welcome Message */}
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">
-        Welcome, {user?.name}
+    <div className="max-w-6xl mx-auto mt-4 p-6 bg-[#181818] text-white rounded-lg">
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-400">
+        Welcome, {user?.name} 👋
       </h1>
 
-      {/* Task Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Task Overview</h2>
+      {/* Task Overview & Priority Pie Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Task Overview */}
+        <div className="bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FaTasks /> Task Overview
+          </h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-100 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700">Total Tasks</h3>
-              <p className="text-2xl font-bold">{taskStats.total}</p>
+            <div className="p-3 bg-blue-500 rounded-lg text-center">
+              Total <p className="text-2xl font-bold">{taskStats.total}</p>
             </div>
-            <div className="p-4 bg-green-100 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700">Completed</h3>
+            <div className="p-3 bg-green-500 rounded-lg text-center">
+              <FaCheckCircle /> Completed
               <p className="text-2xl font-bold">{taskStats.completed}</p>
             </div>
-            <div className="p-4 bg-yellow-100 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700">In Progress</h3>
+            <div className="p-3 bg-yellow-500 rounded-lg text-center">
+              <FaSpinner /> In Progress
               <p className="text-2xl font-bold">{taskStats.inProgress}</p>
             </div>
-            <div className="p-4 bg-red-100 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700">Not Started</h3>
+            <div className="p-3 bg-red-500 rounded-lg text-center">
+              <FaTimesCircle /> Not Started
               <p className="text-2xl font-bold">{taskStats.notStarted}</p>
             </div>
           </div>
         </div>
 
-        {/* Task Status Graph */}
-        <div className="p-4 bg-gray-100 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Task Status</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart
-              data={[
-                { name: "Completed", value: taskStats.completed, color: "#4CAF50" },
-                { name: "In Progress", value: taskStats.inProgress, color: "#FFC107" },
-                { name: "Not Started", value: taskStats.notStarted, color: "#F44336" },
-              ]}
-            >
-              <XAxis dataKey="name" />
-              <YAxis />
+        {/* Priority Pie Chart */}
+        <div className="bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <FaChartPie /> Task Priority
+          </h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={priorityChartData} dataKey="value" outerRadius={80}>
+                {priorityChartData.map((entry, index) => (
+                  <Cell key={index} fill={entry.color} />
+                ))}
+              </Pie>
               <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
+            </PieChart>
           </ResponsiveContainer>
+
+          <div className="mt-4">
+    <h3 className="text-lg font-semibold mb-2">Priority Legend:</h3>
+    <ul className="flex gap-4">
+      <li className="flex items-center gap-2">
+        <span className="w-4 h-4 bg-[#FF4D4F] block rounded-full"></span> 
+        <span>High Priority (Red)</span>
+      </li>
+      <li className="flex items-center gap-2">
+        <span className="w-4 h-4 bg-[#FFCC00] block rounded-full"></span> 
+        <span>Medium Priority (Yellow)</span>
+      </li>
+      <li className="flex items-center gap-2">
+        <span className="w-4 h-4 bg-[#4CAF50] block rounded-full"></span> 
+        <span>Low Priority (Green)</span>
+      </li>
+    </ul>
+  </div>
         </div>
+
+        
       </div>
 
-      {/* Task Priority Graph */}
-      <div className="p-4 bg-gray-100 rounded-lg shadow-md mt-6">
-        <h2 className="text-xl font-semibold mb-4">Task Priority</h2>
+      {/* Task Status Bar Chart */}
+      <div className="bg-[#2a2a2a] p-4 rounded-lg shadow-lg mb-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <FiBarChart2 /> Task Status Graph
+        </h2>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={priorityChartData}>
+          <BarChart
+            data={[
+              { name: "Completed", value: taskStats.completed },
+              { name: "In Progress", value: taskStats.inProgress },
+              { name: "Not Started", value: taskStats.notStarted },
+            ]}
+          >
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Legend />
-            <Bar dataKey="value" fill="#8884d8" />
+            <Bar dataKey="value" fill="#00C49F" />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Task List (Max 4 tasks) */}
-      <h2 className="text-2xl font-semibold mt-8 mb-4">Your Tasks</h2>
+      <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
       {loading ? (
-        <p className="text-center text-gray-600">Loading tasks...</p>
+        <p>Loading tasks...</p>
       ) : tasks.length === 0 ? (
-        <p className="text-center text-gray-600">No tasks available.</p>
+        <p>No tasks available.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {tasks.slice(0, 4).map((task) => (
-            <div key={task._id} className="p-4 bg-gray-100 shadow-md rounded-lg">
-              <h2 className="text-xl font-semibold">{task.title}</h2>
-              <p className="text-gray-700 mt-2">{task.description}</p>
-              <p className="mt-2">
-                <span className="font-medium">Deadline:</span> {new Date(task.deadline).toLocaleDateString()}
-              </p>
-              <span className={`inline-block px-3 py-1 mt-3 rounded-full text-sm font-semibold ${getPriorityColor(task.priority)}`}>
-                {task.priority.toUpperCase()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {tasks.slice(0, 4).map((task) => {
+              const { color, label, icon } = getPriorityStyles(task.priority);
+              const { color: statusColor, label: statusLabel } = getStatusStyles(task.status);
 
-      {/* Show More Button */}
-      {tasks.length > 4 && (
-        <div className="mt-6 text-center">
+              return (
+                <div key={task._id} className="bg-[#2a2a2a] p-4 rounded-lg shadow-lg relative">
+                  <h3 className="text-xl font-bold mb-2">{task.title}</h3>
+
+                  <div className="absolute top-2 right-2 text-right">
+                    <p style={{ color }}>
+                      <strong>Priority:</strong> {label} {icon}
+                    </p>
+                    <p>
+                      <strong>Deadline:</strong>{" "}
+                      {new Date(task.deadline).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <p className="mt-8" style={{ color: statusColor }}>
+                    <strong>Status:</strong> {statusLabel}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
             onClick={() => navigate("/view-task")}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 mx-auto block transition duration-200"
           >
             Show More
           </button>
-        </div>
+        </>
       )}
 
-
-
     </div>
+
+
+
+
+    
   );
 }
 

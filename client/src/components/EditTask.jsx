@@ -15,14 +15,14 @@ function EditTask({ task, onClose, onUpdate }) {
 
   const saveEdit = async () => {
     try {
-      await axios.patch(
+      const response = await axios.patch(
         `http://localhost:5000/api/user/task/${task._id}/update`,
         { title: editForm.title, description: editForm.description },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
-      onUpdate(task._id, editForm); // Update the task in parent component
-      onClose(); // Close the edit form
+      onUpdate(task._id, response.data); // Pass task ID and updated data
+      onClose(); // Close the modal
     } catch (error) {
       console.error("Error updating task:", error);
     }

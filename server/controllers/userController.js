@@ -54,22 +54,28 @@ exports.updateTask = async (req, res) => {
     const { taskId } = req.params;
     const { title, description, priority, deadline } = req.body;
 
+    // Ensure taskId and user are valid
     const task = await Task.findOne({ _id: taskId, createdBy: req.user.id });
 
-    if (!task) return res.status(404).json({ message: "Task not found or unauthorized" });
+    if (!task) {
+      return res.status(404).json({ message: "Task not found or unauthorized" });
+    }
 
-    task.title = title || task.title;
-    task.description = description || task.description;
-    task.priority = priority || task.priority;
-    task.deadline = deadline || task.deadline;
+    // Update fields if provided
+    if (title !== undefined) task.title = title;
+    if (description !== undefined) task.description = description;
+    if (priority !== undefined) task.priority = priority;
+    if (deadline !== undefined) task.deadline = deadline;
 
-    await task.save();
-    res.json({ message: "Task updated successfully", task });
+    // Save and respond with the updated task
+    const updatedTask = await task.save();
+    res.json(updatedTask);
   } catch (error) {
     console.error("Error updating task:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 // ✅ 4. Delete Task (Only if User Created It)
 exports.deleteTask = async (req, res) => {

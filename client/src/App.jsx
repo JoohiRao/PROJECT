@@ -14,6 +14,7 @@ import CreateTeams from "./pages/CreateTeams";
 import ViewMembers from "./pages/ViewMembers";
 import TrashTeams from "./pages/TrashTeams";
 import Settings from "./pages/Settings";
+import AdminViewTeams from "./pages/AdminViewTeams";
 import Layout from "./components/Layout";
 import { AuthProvider } from "./context/AuthContext";
 import AuthContext from "./context/AuthContext";
@@ -43,6 +44,7 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admindashboard" element={<AdminDashboard/>}/>
+            <Route path="/adminview-teams" element={<AdminViewTeams />} />
             <Route path="/create-teams" element={<CreateTeams />} />
             <Route path="/view-members" element={<ViewMembers />} />
             <Route path="/trash-teams" element={<TrashTeams />} />

@@ -6,7 +6,7 @@ import AuthContext from "../context/AuthContext";
 function CreateTask() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  
+
   const [task, setTask] = useState({
     title: "",
     description: "",
@@ -30,8 +30,7 @@ function CreateTask() {
       await axios.post("http://localhost:5000/api/user/task", task, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-
-      navigate("/dashboard", { state: { refresh: true } });// Redirect to Dashboard after success
+      navigate("/dashboard", { state: { refresh: true } });
     } catch (err) {
       setError(err.response?.data?.message || "Error creating task");
     } finally {
@@ -40,72 +39,86 @@ function CreateTask() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">Create New Task</h2>
-      {error && <p className="text-red-500 mb-3">{error}</p>}
+    <div className="flex items-center justify-center min-h-screen bg-black text-white">
+      <div className="w-full max-w-3xl p-8 bg-[#1a1a1a] text-gray-300 shadow-lg rounded-lg">
+        <h2 className="text-3xl font-bold text-center mb-6 text-blue-400">
+          Create New Task
+        </h2>
+        {error && <p className="text-red-500 mb-4 font-semibold">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Title */}
-        <div>
-          <label className="block text-gray-700 font-medium">Title</label>
-          <input
-            type="text"
-            name="title"
-            value={task.title}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-gray-400 font-medium mb-2">
+              Task Title
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={task.title}
+              onChange={handleChange}
+              required
+              placeholder="Enter task title"
+              className="w-full px-4 py-2 bg-[#333333] border border-gray-500 rounded-lg text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-gray-700 font-medium">Description</label>
-          <textarea
-            name="description"
-            value={task.description}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          ></textarea>
-        </div>
+          {/* Description */}
+          <div>
+            <label className="block text-gray-400 font-medium mb-2">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={task.description}
+              onChange={handleChange}
+              required
+              placeholder="Enter task description"
+              className="w-full px-4 py-2 bg-[#333333] border border-gray-500 rounded-lg text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+            ></textarea>
+          </div>
 
-        {/* Priority */}
-        <div>
-          <label className="block text-gray-700 font-medium">Priority</label>
-          <select
-            name="priority"
-            value={task.priority}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Priority */}
+          <div>
+            <label className="block text-gray-400 font-medium mb-2">
+              Priority
+            </label>
+            <select
+              name="priority"
+              value={task.priority}
+              onChange={handleChange}
+              className="w-full px-4 py-2 bg-[#333333] border border-gray-500 rounded-lg text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          {/* Deadline */}
+          <div>
+            <label className="block text-gray-400 font-medium mb-2">
+              Deadline
+            </label>
+            <input
+              type="date"
+              name="deadline"
+              value={task.deadline}
+              onChange={handleChange}
+              className="w-full px-4 py-2 bg-[#333333] border border-gray-500 rounded-lg text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-transform duration-300 transform hover:scale-105"
           >
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-
-        {/* Deadline */}
-        <div>
-          <label className="block text-gray-700 font-medium">Deadline</label>
-          <input
-            type="date"
-            name="deadline"
-            value={task.deadline}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
-        >
-          {loading ? "Creating..." : "Create Task"}
-        </button>
-      </form>
+            {loading ? "Creating..." : "Create Task"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
