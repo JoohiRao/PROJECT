@@ -6,6 +6,8 @@ const authRoutes=require("./routes/authRoutes")
 const teamRoutes = require("./routes/teamRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes=require("./routes/userRoutes")
+const viewRoutes=require("./routes/viewRoutes")
+
 
 dotenv.config()
 const app=express()
@@ -23,6 +25,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/team", teamRoutes)
 app.use("/api/admin", adminRoutes);
 app.use("/api/user",userRoutes);
-
+app.use("/api/t",viewRoutes)
 app.listen(5000)
 

@@ -2,6 +2,55 @@ const Task = require("../models/Task");
 const Team = require("../models/Team");
 const User = require("../models/User");
 
+exports.CreateTeam = async (req, res) => {
+  try {
+    const { name, members, priority, deadline } = req.body;
+
+    // 🔴 Check for missing fields
+    if (!name || !priority || !deadline || members.length === 0) {
+      return res.status(400).json({ message: "All fields are required!" });
+    }
+
+    // 🔴 Check if a team with the same name already exists
+    const existingTeam = await Team.findOne({ name });
+    if (existingTeam) {
+      return res.status(400).json({ message: "Team name already exists!" });
+    }
+
+    // 🔹 Convert member emails to ObjectIds and ensure lowercase for roles
+    const memberIds = await User.find({
+      email: { $in: members },
+    })
+      .select("_id role")
+      .lean();
+
+    // Convert roles to lowercase
+    memberIds.forEach((member) => {
+      member.role = member.role.toLowerCase();
+    });
+
+    // Check if all members were found
+    if (memberIds.length !== members.length) {
+      return res.status(404).json({
+        message: "Some members not found. Ensure all emails are registered.",
+      });
+    }
+
+    const team = new Team({
+      name,
+      members: memberIds.map((user) => user._id),
+      priority,
+      deadline,
+    });
+
+    await team.save();
+    res.status(201).json({ message: "Team created successfully!", team });
+  } catch (error) {
+    console.error("Error creating team:", error);
+    res.status(500).json({ message: "Failed to create the team!" });
+  }
+};
+
 
 exports.getAllTeams = async (req, res) => {
   try {

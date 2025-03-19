@@ -43,7 +43,7 @@ function CreateTeams() {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/team",
+        "http://localhost:5000/api/team/create-team",
         { name: teamName, members, priority, deadline },
         { headers: { Authorization: `Bearer ${token}` } }
       );

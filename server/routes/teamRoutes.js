@@ -3,6 +3,7 @@ const Team = require("../models/Team");
 const TrashTeam = require("../models/TrashTeam");
 
 const {
+  CreateTeam,
   getTeamOverview,
   getMemberInsights,
   getRecentActivity,
@@ -30,6 +31,7 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+router.post("/create-team",CreateTeam)
 // Team Overview
 router.get("/", getAllTeams);
 
@@ -79,6 +81,8 @@ router.post("/:teamId/add-member", addMember);
 // Remove member from a team
 router.post("/:teamId/remove-member", removeMember);
 
+
+//trash folder
 router.get("/trashed-teams", getTrashedTeams);
 router.put("/trash/:teamId", trashTeam);
 router.put("/restore/:teamId", restoreTeam);
