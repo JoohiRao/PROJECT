@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { FaTrashAlt, FaRecycle } from "react-icons/fa"; // Import icons
 
 function TrashTeams() {
   const [trashedTeams, setTrashedTeams] = useState([]);
@@ -14,21 +14,21 @@ function TrashTeams() {
     fetchTrashedTeams();
   }, []);
 
+  // Fetch trashed teams
   const fetchTrashedTeams = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/team/trashed-teams", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTrashedTeams(response.data.trashedTeams);
+      const response = await axios.get("http://localhost:5000/api/team/trashed-teams");
+      setTrashedTeams(response.data.trashedTeams || []);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching trashed teams:", error);
       setError("Failed to fetch trashed teams.");
-    } finally {
       setLoading(false);
     }
   };
 
-  const restoreTeam = async (teamId) => {
+  // Restore team
+  const handleRestoreTeam = async (teamId) => {
     if (!window.confirm("Are you sure you want to restore this team?")) return;
 
     try {
@@ -37,16 +37,17 @@ function TrashTeams() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("Team restored successfully!");
+      alert("Team restored!");
       fetchTrashedTeams();
     } catch (error) {
       console.error("Error restoring team:", error);
-      alert("Failed to restore the team.");
+      alert("Failed to restore team.");
     }
   };
 
-  const permanentlyDeleteTeam = async (teamId) => {
-    if (!window.confirm("This action is irreversible! Are you sure?")) return;
+  // Permanently delete team
+  const handlePermanentDelete = async (teamId) => {
+    if (!window.confirm("This action is permanent. Delete team forever?")) return;
 
     try {
       await axios.delete(`http://localhost:5000/api/team/delete-permanently/${teamId}`, {
@@ -55,48 +56,61 @@ function TrashTeams() {
       alert("Team permanently deleted!");
       fetchTrashedTeams();
     } catch (error) {
-      console.error("Error permanently deleting team:", error);
-      alert("Failed to delete the team.");
+      console.error("Error deleting team:", error);
+      alert("Failed to delete team permanently.");
     }
   };
 
-  if (loading) return <p className="text-center">Loading trashed teams...</p>;
+  if (loading) return <p className="text-center text-white">Loading trashed teams...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-center mb-6 text-red-600">🗑️ Trashed Teams</h2>
+    <div className="min-h-screen bg-black text-white p-8">
+      <h2 className="text-2xl font-bold text-center mb-6 tracking-wide">🗑️ Trashed Teams</h2>
 
-      {trashedTeams.length === 0 ? (
-        <p className="text-center text-gray-500">No trashed teams found.</p>
-      ) : (
-        <div className="space-y-4">
-          {trashedTeams.map((team) => (
-            <div key={team._id} className="p-4 border rounded-md shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800">{team.teamName}</h3>
-              <p className="text-gray-600">
-                Members: {team.members.length} | Deleted At: {new Date(team.deletedAt).toLocaleString()}
-              </p>
-              <div className="flex gap-4 mt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {trashedTeams.length > 0 ? (
+          trashedTeams.map((team) => (
+            <div
+              key={team._id}
+              className="bg-[#2A2A2A] p-8 rounded-lg shadow-md border border-gray-700 
+              transform transition-all duration-300 hover:scale-105 hover:shadow-md"
+            >
+              <h3 className="text-lg font-semibold text-red-400 flex items-center justify-between">
+                {team.name}
+                {/* <span className="text-gray-500 text-sm">#{team._id.slice(-4)}</span> */}
+              </h3>
+              <p className="text-gray-400 mt-2 text-sm">🗓️ Deleted At: {new Date(team.deletedAt).toLocaleDateString()}</p>
+
+              <div className="mt-4 flex gap-4">
                 <button
-                  onClick={() => restoreTeam(team._id)}
-                  className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600"
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 
+                  transition-all duration-300 text-white px-4 py-1.5 rounded-md shadow 
+                  hover:scale-105 text-sm"
+                  onClick={() => handleRestoreTeam(team._id)}
                 >
+                  <FaRecycle className="text-base" />
                   Restore
                 </button>
+
                 <button
-                  onClick={() => permanentlyDeleteTeam(team._id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 
+                  transition-all duration-300 text-white px-4 py-1.5 rounded-md shadow 
+                  hover:scale-105 text-sm"
+                  onClick={() => handlePermanentDelete(team._id)}
                 >
-                  Delete Permanently
+                  <FaTrashAlt className="text-base" />
+                  Delete 
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          <p className="text-gray-400 text-center col-span-3">No trashed teams.</p>
+        )}
+      </div>
     </div>
-  )
+  );
 }
 
 export default TrashTeams;

@@ -96,10 +96,20 @@ router.put("/teams/:teamId", async (req, res) => {
 // Delete team (move to trash)
 router.delete("/teams/:teamId", async (req, res) => {
   try {
-    await Team.findByIdAndDelete(req.params.teamId);
-    res.json({ message: "Team deleted successfully!" });
+    const team = await Team.findById(req.params.teamId);
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // ✅ Soft delete instead of permanent delete
+    team.isDeleted = true;
+    team.deletedAt = new Date();
+    await team.save();
+
+    res.json({ message: "Team moved to trash successfully!", team });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting team" });
+    console.error("Error deleting team:", error);
+    res.status(500).json({ message: "Error deleting team", error: error.message });
   }
 });
 

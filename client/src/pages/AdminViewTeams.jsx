@@ -29,11 +29,11 @@ const AdminViewTeams = () => {
   // Delete a team
   const handleDeleteTeam = async (teamId) => {
     if (!window.confirm("Are you sure you want to delete this team?")) return;
-
+  
     try {
       await axios.delete(`http://localhost:5000/api/t/teams/${teamId}`);
       alert("Team deleted successfully!");
-      fetchTeams();
+      setTeams((prevTeams) => prevTeams.filter((team) => team._id !== teamId)); // Remove from UI
     } catch (error) {
       console.error("Error deleting team:", error);
       alert("Failed to delete team.");

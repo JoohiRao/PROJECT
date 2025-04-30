@@ -324,14 +324,14 @@ exports.deleteTeam = async (req, res) => {
     const { teamId } = req.params;
 
     const team = await Team.findById(teamId);
-
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Move to trash (if TrashTeam model exists)
-    await TrashTeam.create(team.toObject());
-    await Team.findByIdAndDelete(teamId);
+    // Mark as trashed instead of deleting
+    team.isDeleted = true;
+    team.deletedAt = new Date();
+    await team.save();
 
     res.status(200).json({ message: "Team moved to trash successfully" });
   } catch (err) {

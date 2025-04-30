@@ -1,6 +1,7 @@
 const express = require("express");
 const Team = require("../models/Team");
-const TrashTeam = require("../models/TrashTeam");
+const User=require("../models/User")
+// const TrashTeam = require("../models/TrashTeam");
 
 const {
   CreateTeam,
