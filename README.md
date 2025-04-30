@@ -31,6 +31,7 @@ Clean, modular React frontend.
 RESTful API backend with Node.js + Express.
 
 
+
 HOW TO SETUP AND RUN THE PROJECT
 
 To set up and run this project, begin by cloning the repository using git clone,
@@ -57,4 +58,12 @@ Nodemon for automatically restarting the backend server during development.
 
 
 
+
+DEMO :
+
+## Demo Video
+
+Click here to view the demo video: [Demo Video](assets/Taskify_user.mp4)
+
+Click here to view the demo2 video2: [Demo Video](assets/Taskify_admin.mp4)
 
